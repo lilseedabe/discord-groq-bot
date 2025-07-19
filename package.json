@@ -1,0 +1,30 @@
+{
+    "name": "discord-groq-ephemeral-bot",
+    "version": "1.0.0",
+    "description": "Discord bot using Groq AI with ephemeral responses",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "nodemon index.js"
+    },
+    "dependencies": {
+        "discord.js": "^14.21.0",
+        "dotenv": "^16.6.1",
+        "groq-sdk": "^0.27.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.10"
+    },
+    "keywords": [
+        "discord",
+        "bot",
+        "groq",
+        "ai",
+        "ephemeral",
+        "kimi",
+        "qwen",
+        "compound"
+    ],
+    "author": "Nako",
+    "license": "MIT"
+}
