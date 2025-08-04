@@ -1,7 +1,7 @@
 {
-    "name": "discord-groq-ephemeral-bot",
-    "version": "1.0.0",
-    "description": "Discord bot using Groq AI with ephemeral responses",
+    "name": "discord-groq-bot",
+    "version": "2.0.0",
+    "description": "Discord bot with Groq AI and Twitter integration",
     "main": "index.js",
     "scripts": {
         "start": "node index.js",
@@ -10,7 +10,13 @@
     "dependencies": {
         "discord.js": "^14.21.0",
         "dotenv": "^16.6.1",
-        "groq-sdk": "^0.27.0"
+        "groq-sdk": "^0.27.0",
+        "twitter-api-v2": "^1.17.2",
+        "pg": "^8.12.0",
+        "express": "^4.19.2",
+        "helmet": "^7.1.0",
+        "express-rate-limit": "^7.4.0",
+        "node-cron": "^3.0.3"
     },
     "devDependencies": {
         "nodemon": "^3.1.10"
@@ -20,10 +26,9 @@
         "bot",
         "groq",
         "ai",
-        "ephemeral",
-        "kimi",
-        "qwen",
-        "compound"
+        "twitter",
+        "integrated",
+        "ephemeral"
     ],
     "author": "Nako",
     "license": "MIT"
