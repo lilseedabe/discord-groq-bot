@@ -19,6 +19,37 @@ let memoryStats = {
     lastCleanup: Date.now()
 };
 
+// スラッシュコマンド定義
+const commands = [
+    new SlashCommandBuilder().setName('ask').setDescription('AIと会話する').addStringOption(option =>
+        option.setName('message').setDescription('メッセージ内容').setRequired(true)
+    ),
+    new SlashCommandBuilder().setName('tweet').setDescription('X(Twitter)に投稿する').addStringOption(option =>
+        option.setName('content').setDescription('投稿内容（280文字以内）').setRequired(true)
+    ),
+    // 必要に応じて他コマンドも追加
+];
+
+// コマンド登録処理
+const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
+
+async function deployCommands() {
+    try {
+        await rest.put(
+            Routes.applicationCommands(CLIENT_ID),
+            { body: commands }
+        );
+        console.log('✅ スラッシュコマンド登録完了');
+    } catch (error) {
+        console.error('❌ スラッシュコマンド登録失敗:', error);
+    }
+}
+
+// Bot起動時にコマンド登録
+client.once('ready', async () => {
+    console.log(`✅ ${client.user.tag} がログインしました！`);
+    await deployCommands();
+});
 function getConversation(userId) {
     if (!conversationMemory.has(userId)) {
         conversationMemory.set(userId, {
