@@ -21,7 +21,6 @@ let memoryStats = {
 
 // スラッシュコマンド定義
 // 拡張スラッシュコマンド定義
-const { MODELS } = require('./aiService');
 const commands = [
     new SlashCommandBuilder()
         .setName('ask')
