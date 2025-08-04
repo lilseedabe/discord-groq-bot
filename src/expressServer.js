@@ -10,6 +10,9 @@ const BASE_URL = process.env.BASE_URL;
 
 const app = express();
 app.use(helmet());
+app.get('/', (req, res) => {
+    res.send('Discord Groq Bot is running.');
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
