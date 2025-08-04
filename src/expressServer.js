@@ -37,7 +37,21 @@ app.get('/auth/:sessionId', async (req, res) => {
         secureSetupSessions.delete(sessionId);
         return res.status(410).send('セッションが期限切れです。Discord botで新しい設定リンクを取得してください。');
     }
-    res.send('<認証フォームHTMLをここに記述>');
+    res.send(`
+        <html>
+        <head><title>Twitter APIキー設定</title></head>
+        <body>
+            <h2>Twitter APIキー設定フォーム</h2>
+            <form method="POST">
+                <label>API Key: <input type="text" name="apiKey" required></label><br>
+                <label>API Secret: <input type="text" name="apiSecret" required></label><br>
+                <label>Access Token: <input type="text" name="accessToken" required></label><br>
+                <label>Access Token Secret: <input type="text" name="accessSecret" required></label><br>
+                <button type="submit">保存</button>
+            </form>
+        </body>
+        </html>
+    `);
 });
 
 // 認証フォーム処理

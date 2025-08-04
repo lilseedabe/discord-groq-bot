@@ -224,31 +224,79 @@ client.on('interactionCreate', async (interaction) => {
             await interaction.editReply({ content: 'Twitter APIキー設定フォームはWeb側で提供予定です', ephemeral: true });
         } else if (commandName === 'tweet') {
             const content = interaction.options.getString('content');
-            // Twitter投稿（仮実装）
-            await interaction.editReply({ content: `ツイート: ${content}（Twitter連携は未実装）`, ephemeral: true });
+            try {
+                const { postTweet } = require('./twitterService');
+                const result = await postTweet(userId, content, interaction.channelId);
+                await interaction.editReply({ content: `✅ ツイート完了: ${result.tweetUrl}\n残り投稿回数: ${result.remaining}`, ephemeral: true });
+            } catch (err) {
+                await interaction.editReply({ content: `❌ ツイート失敗: ${err.message}`, ephemeral: true });
+            }
         } else if (commandName === 'ai-tweet') {
             const request = interaction.options.getString('request');
             const model = interaction.options.getString('model') || MODELS.DEFAULT;
-            // AI相談→ツイート（仮実装）
-            await interaction.editReply({ content: `AI相談: ${request}（Twitter連携は未実装）`, ephemeral: true });
+            try {
+                const { postAITweet } = require('./twitterService');
+                const result = await postAITweet(userId, request, model, interaction.channelId);
+                await interaction.editReply({ content: `✅ AIツイート完了: ${result.tweetUrl}\n残り投稿回数: ${result.remaining}`, ephemeral: true });
+            } catch (err) {
+                await interaction.editReply({ content: `❌ AIツイート失敗: ${err.message}`, ephemeral: true });
+            }
         } else if (commandName === 'tweet-ideas') {
             const theme = interaction.options.getString('theme');
             const count = interaction.options.getInteger('count') || 3;
-            // アイデア提案（仮実装）
-            await interaction.editReply({ content: `テーマ: ${theme} アイデア${count}件（AI提案は未実装）`, ephemeral: true });
+            const model = MODELS.DEFAULT;
+            try {
+                const { getTweetIdeas } = require('./twitterService');
+                const ideas = await getTweetIdeas(userId, theme, count, model);
+                await interaction.editReply({ content: `✅ アイデア提案:\n${ideas.join('\n')}`, ephemeral: true });
+            } catch (err) {
+                await interaction.editReply({ content: `❌ アイデア提案失敗: ${err.message}`, ephemeral: true });
+            }
         } else if (commandName === 'twitter-usage') {
-            await interaction.editReply({ content: '今月のTwitter使用量（仮実装）', ephemeral: true });
+            try {
+                const { getTwitterUsage } = require('./twitterService');
+                const usage = await getTwitterUsage(userId);
+                await interaction.editReply({ content: `今月のTwitter投稿数: ${usage.count}\n残り: ${usage.remaining}`, ephemeral: true });
+            } catch (err) {
+                await interaction.editReply({ content: `❌ 使用量取得失敗: ${err.message}`, ephemeral: true });
+            }
         } else if (commandName === 'twitter-history') {
-            await interaction.editReply({ content: '最近のTwitter投稿履歴（仮実装）', ephemeral: true });
+            try {
+                const { getTwitterHistory } = require('./twitterService');
+                const history = await getTwitterHistory(userId, 10);
+                const lines = history.map(h => `${h.tweet_content} (${h.status})`).join('\n');
+                await interaction.editReply({ content: `最近のTwitter投稿履歴:\n${lines}`, ephemeral: true });
+            } catch (err) {
+                await interaction.editReply({ content: `❌ 履歴取得失敗: ${err.message}`, ephemeral: true });
+            }
         } else if (commandName === 'schedule-tweet') {
             const content = interaction.options.getString('content');
             const when = interaction.options.getString('when');
-            await interaction.editReply({ content: `スケジュール投稿: ${content} at ${when}（仮実装）`, ephemeral: true });
+            try {
+                const { scheduleTweet } = require('./twitterService');
+                await scheduleTweet(userId, content, when, interaction.channelId);
+                await interaction.editReply({ content: `✅ スケジュール投稿を登録しました: ${content} at ${when}`, ephemeral: true });
+            } catch (err) {
+                await interaction.editReply({ content: `❌ スケジュール登録失敗: ${err.message}`, ephemeral: true });
+            }
         } else if (commandName === 'schedule-list') {
-            await interaction.editReply({ content: 'スケジュール一覧（仮実装）', ephemeral: true });
+            try {
+                const { getScheduleList } = require('./twitterService');
+                const list = await getScheduleList(userId);
+                const lines = list.map(s => `${s.tweet_content} at ${s.scheduled_time} (${s.status})`).join('\n');
+                await interaction.editReply({ content: `スケジュール一覧:\n${lines}`, ephemeral: true });
+            } catch (err) {
+                await interaction.editReply({ content: `❌ スケジュール一覧取得失敗: ${err.message}`, ephemeral: true });
+            }
         } else if (commandName === 'schedule-cancel') {
             const id = interaction.options.getInteger('id');
-            await interaction.editReply({ content: `ID:${id} のスケジュール投稿をキャンセル（仮実装）`, ephemeral: true });
+            try {
+                const { cancelSchedule } = require('./twitterService');
+                await cancelSchedule(userId, id);
+                await interaction.editReply({ content: `✅ ID:${id} のスケジュール投稿をキャンセルしました`, ephemeral: true });
+            } catch (err) {
+                await interaction.editReply({ content: `❌ キャンセル失敗: ${err.message}`, ephemeral: true });
+            }
         }
     } catch (error) {
         await interaction.editReply({ content: `❌ エラー: ${error.message}`, ephemeral: true });
