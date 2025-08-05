@@ -1,15 +1,9 @@
-// Twitterサービス（Discord ID型問題完全修正版）
+// Twitterサービス（データベース接続統一完全修正版）
 const { TwitterApi } = require('twitter-api-v2');
-const { Pool } = require('pg');
+const { pool } = require('./db'); // 🔧 重要: db.jsの共通poolを使用
 const { encrypt, decrypt } = require('./utils');
 
-const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
-});
+// 🚫 独自のPool作成は削除！（db.jsのpoolを使用するため）
 
 // 🆕 Discord ID から DB内部ID を取得するヘルパー関数
 async function getDbUserId(discordId, client) {
@@ -43,16 +37,16 @@ async function getUserTwitterCredentials(userId) {
         // DB内部IDを使ってAPIキーを取得
         const result = await client.query(
             'SELECT * FROM user_api_keys WHERE user_id = $1 AND is_valid = true',
-            [dbUserId]  // 🔧 DB内部ID（integer）を使用
+            [dbUserId] // 🔧 DB内部ID（整数）を使用
         );
         
         if (result.rows.length === 0) {
-            console.log(`❌ 有効なAPIキーが見つかりません: DB User ID ${dbUserId}`);
+            console.log(`❌ 有効なAPIキーが見つかりません: DB ユーザーID ${dbUserId}`);
             return null;
         }
         
         const creds = result.rows[0];
-        console.log(`✅ Twitter認証情報取得成功: DB User ID ${dbUserId}`);
+        console.log(`✅ Twitter認証情報取得成功: DBユーザーID ${dbUserId}`);
         
         return {
             apiKey: decrypt(creds.encrypted_api_key),
@@ -83,14 +77,14 @@ async function checkUsageLimit(userId, limit = 50) {
         // DB内部IDを使って使用状況を取得
         let result = await client.query(
             'SELECT * FROM usage_tracking WHERE user_id = $1 AND month_year = $2',
-            [dbUserId, currentMonth]  // 🔧 DB内部ID（integer）を使用
+            [dbUserId, currentMonth] // 🔧 DB内部ID（整数）を使用
         );
         
         if (result.rows.length === 0) {
-            console.log(`📝 新しい使用記録を作成: DB User ID ${dbUserId}`);
+            console.log(`📝 新しい使用記録を作成: DB ユーザー ID ${dbUserId}`);
             await client.query(
                 'INSERT INTO usage_tracking (user_id, month_year, tweet_count) VALUES ($1, $2, 0)',
-                [dbUserId, currentMonth]  // 🔧 DB内部ID（integer）を使用
+                [dbUserId, currentMonth] // 🔧 DB内部ID（整数）を使用
             );
             return { count: 0, remaining: limit };
         }
@@ -124,14 +118,14 @@ async function updateUsageCount(userId) {
         const currentMonth = new Date().toISOString().slice(0, 7);
         
         await client.query(
-            `INSERT INTO usage_tracking (user_id, month_year, tweet_count) 
-             VALUES ($1, $2, 1) 
-             ON CONFLICT (user_id, month_year) 
+            `INSERT INTO usage_tracking (user_id, month_year, tweet_count)
+             VALUES ($1, $2, 1)
+             ON CONFLICT (user_id, month_year)
              DO UPDATE SET tweet_count = usage_tracking.tweet_count + 1`,
-            [dbUserId, currentMonth]  // 🔧 DB内部ID（integer）を使用
+            [dbUserId, currentMonth] // 🔧 DB内部ID（整数）を使用
         );
         
-        console.log(`✅ 使用回数更新完了: DB User ID ${dbUserId}`);
+        console.log(`✅ 使用回数更新完了: DB ユーザー ID ${dbUserId}`);
     } catch (error) {
         console.error('❌ 使用回数更新エラー:', error);
         throw error;
@@ -154,7 +148,7 @@ async function postTweet(userId, content, channelId) {
         // 使用制限をチェック
         const usage = await checkUsageLimit(userId);
         if (usage.remaining <= 0) {
-            throw new Error(`今月の投稿制限（50回）に達しています。来月まで待つか、別のアカウントをご利用ください。現在の使用回数: ${usage.count}`);
+            throw new Error(`今月の投稿制限（50回）に達しています。来月までお待ちいただくか、別のアカウントをご利用ください。現在の使用回数: ${usage.count}`);
         }
         
         // Twitterクライアントを作成
@@ -168,7 +162,7 @@ async function postTweet(userId, content, channelId) {
         // ツイートを投稿
         console.log(`📤 Twitter投稿実行中...`);
         const tweet = await twitterClient.v2.tweet(content);
-        console.log(`✅ Twitter投稿成功: Tweet ID ${tweet.data.id}`);
+        console.log(`✅ Twitter投稿成功: ツイートID ${tweet.data.id}`);
         
         // 使用回数を更新
         await updateUsageCount(userId);
@@ -212,19 +206,19 @@ async function recordTweetHistory(userId, channelId, content, tweetId, status) {
         if (tweetId) {
             await client.query(
                 'INSERT INTO tweet_history (user_id, discord_channel_id, tweet_content, tweet_id, status) VALUES ($1, $2, $3, $4, $5)',
-                [dbUserId, channelId, content, tweetId, status]  // 🔧 DB内部ID（integer）を使用
+                [dbUserId, channelId, content, tweetId, status] // 🔧 DB内部ID（整数）を使用
             );
         } else {
             await client.query(
                 'INSERT INTO tweet_history (user_id, discord_channel_id, tweet_content, status) VALUES ($1, $2, $3, $4)',
-                [dbUserId, channelId, content, status]  // 🔧 DB内部ID（integer）を使用
+                [dbUserId, channelId, content, status] // 🔧 DB内部ID（整数）を使用
             );
         }
         
-        console.log(`✅ ツイート履歴記録完了: DB User ID ${dbUserId}`);
+        console.log(`✅ ツイート履歴記録完了: DB ユーザーID ${dbUserId}`);
     } catch (error) {
         console.error('❌ ツイート履歴記録エラー:', error);
-        // 履歴記録エラーはメイン処理に影響しないようにする
+        // 履歴記録エラーはメイン処理に影響しないように
     } finally {
         client.release();
     }
@@ -232,7 +226,7 @@ async function recordTweetHistory(userId, channelId, content, tweetId, status) {
 
 // 🆕 追加のヘルパー関数（将来の機能用）
 async function getTwitterUsage(userId) {
-    console.log(`📊 Twitter使用量取得: Discord ID ${userId}`);
+    console.log(`📊 Twitter利用量取得: Discord ID ${userId}`);
     return await checkUsageLimit(userId);
 }
 
@@ -246,7 +240,7 @@ async function getTwitterHistory(userId, limit = 10) {
         
         const result = await client.query(
             'SELECT * FROM tweet_history WHERE user_id = $1 ORDER BY posted_at DESC LIMIT $2',
-            [dbUserId, limit]  // 🔧 DB内部ID（integer）を使用
+            [dbUserId, limit] // 🔧 DB内部ID（整数）を使用
         );
         
         console.log(`✅ Twitter履歴取得完了: ${result.rows.length}件`);
