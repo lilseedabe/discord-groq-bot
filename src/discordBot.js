@@ -221,7 +221,18 @@ client.on('interactionCreate', async (interaction) => {
         } else if (commandName === 'models') {
             await interaction.editReply({ content: `利用可能モデル: ${Object.values(MODELS).join(', ')}`, ephemeral: true });
         } else if (commandName === 'setup-twitter') {
-            await interaction.editReply({ content: 'Twitter APIキー設定フォームはWeb側で提供予定です', ephemeral: true });
+            const { secureSetupSessions } = require('./expressServer');
+            const sessionId = `${userId}-${Date.now()}`;
+            secureSetupSessions.set(sessionId, {
+                userId,
+                expires: Date.now() + 10 * 60 * 1000 // 10分有効
+            });
+            const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+            await interaction.editReply({
+                content: `Twitter APIキー設定はこちら: ${baseUrl}/auth/${sessionId}\n（10分以内に入力してください）`,
+                ephemeral: true
+            });
+        }
         } else if (commandName === 'tweet') {
             const content = interaction.options.getString('content');
             try {
