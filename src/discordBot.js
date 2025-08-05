@@ -148,6 +148,7 @@ client.once('ready', async () => {
     console.log(`✅ ${client.user.tag} がログインしました！`);
     await deployCommands();
 });
+
 function getConversation(userId) {
     if (!conversationMemory.has(userId)) {
         conversationMemory.set(userId, {
@@ -178,10 +179,6 @@ function updateConversation(userId, userMessage, aiResponse, model) {
     conversationMemory.set(userId, conversation);
 }
 
-client.once('ready', async () => {
-    console.log(`✅ ${client.user.tag} がログインしました！`);
-});
-
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
     const { commandName } = interaction;
@@ -189,6 +186,7 @@ client.on('interactionCreate', async (interaction) => {
     const username = interaction.user.username;
     await interaction.deferReply({ ephemeral: true });
 
+    // ★★★ tryブロック開始 ★★★
     try {
         if (commandName === 'ask') {
             const message = interaction.options.getString('message');
@@ -232,7 +230,6 @@ client.on('interactionCreate', async (interaction) => {
                 content: `Twitter APIキー設定はこちら: ${baseUrl}/auth/${sessionId}\n（10分以内に入力してください）`,
                 ephemeral: true
             });
-        }
         } else if (commandName === 'tweet') {
             const content = interaction.options.getString('content');
             try {
