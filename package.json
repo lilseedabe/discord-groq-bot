@@ -29,7 +29,8 @@
     "ai",
     "twitter",
     "integration",
-    "secure"
+    "secure",
+    "ephemeral"
   ],
   "author": "Nako",
   "license": "MIT",
