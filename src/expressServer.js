@@ -1,4 +1,4 @@
-// Expressサーバ管理（構文エラー修正版）
+// Expressサーバ管理（Discord ID型問題完全修正版）
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -386,7 +386,7 @@ function createAuthFormHtml(expiresAt) {
 </html>`;
 }
 
-// 認証フォーム処理
+// 🔧 認証フォーム処理（Discord ID型問題完全修正版）
 app.post('/auth/:sessionId', async (req, res) => {
     try {
         const { sessionId } = req.params;
@@ -428,26 +428,53 @@ app.post('/auth/:sessionId', async (req, res) => {
         const user = await testClient.v2.me();
         console.log(`✅ Twitter API認証成功: @${user.data.username} (${session.userId})`);
         
-        // データベースに保存
+        // 🔧 修正: データベースに保存（Discord ID型問題解決）
         const client = await pool.connect();
         try {
-            // 既存のキーを無効化
-            await client.query(
-                'UPDATE user_api_keys SET is_valid = false WHERE user_id = $1',
-                [session.userId]
+            console.log(`🔍 ユーザー検索開始: Discord ID ${session.userId}`);
+            
+            // まずユーザーを検索または作成（Discord IDを文字列として扱う）
+            const userResult = await client.query(
+                'SELECT id FROM users WHERE discord_id = $1',
+                [session.userId.toString()]  // 🔧 必ず文字列に変換
             );
             
-            // 新しいキーを保存（🔧 構文エラー修正）
+            let dbUserId;
+            if (userResult.rows.length === 0) {
+                // ユーザーが存在しない場合は作成
+                console.log(`📝 新しいユーザーを作成中: Discord ID ${session.userId}`);
+                const newUserResult = await client.query(
+                    'INSERT INTO users (discord_id, discord_username) VALUES ($1, $2) RETURNING id',
+                    [session.userId.toString(), 'TwitterUser']  // 🔧 必ず文字列として挿入
+                );
+                dbUserId = newUserResult.rows[0].id;
+                console.log(`✅ 新しいユーザー作成完了: DB ID ${dbUserId}, Discord ID ${session.userId}`);
+            } else {
+                dbUserId = userResult.rows[0].id;
+                console.log(`✅ 既存ユーザー取得: DB ID ${dbUserId}, Discord ID ${session.userId}`);
+            }
+            
+            // 既存のAPIキーを無効化（DB内部IDを使用）
+            console.log(`🔄 既存APIキーを無効化中: DB User ID ${dbUserId}`);
+            await client.query(
+                'UPDATE user_api_keys SET is_valid = false WHERE user_id = $1',
+                [dbUserId]  // 🔧 これはDB内部のID（integer型）なので安全
+            );
+            
+            // 新しいキーを保存（DB内部IDを使用）
+            console.log(`💾 新しいAPIキーを保存中: DB User ID ${dbUserId}`);
             await client.query(
                 'INSERT INTO user_api_keys (user_id, encrypted_api_key, encrypted_api_secret, encrypted_access_token, encrypted_access_secret) VALUES ($1, $2, $3, $4, $5)',
                 [
-                    session.userId,
+                    dbUserId,  // 🔧 これもDB内部のID（integer型）なので安全
                     encrypt(apiKey.trim()),
                     encrypt(apiSecret.trim()),
                     encrypt(accessToken.trim()),
                     encrypt(accessSecret.trim())
                 ]
             );
+            
+            console.log(`✅ APIキー保存完了: DB User ID ${dbUserId}, Discord ID ${session.userId}, Twitter @${user.data.username}`);
         } finally {
             client.release();
         }
