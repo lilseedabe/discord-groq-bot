@@ -1,4 +1,4 @@
-// Expressサーバ管理（trust proxy対応版）
+// Expressサーバ管理（構文エラー修正版）
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -52,11 +52,10 @@ const authLimit = rateLimit({
         error: 'アクセス制限に達しました。しばらく時間をおいてから再度お試しください。',
         retryAfter: '15分後'
     },
-    standardHeaders: true, // rateLimit情報をheaderに含める
-    legacyHeaders: false, // X-RateLimit-* headerを無効化
-    trustProxy: true, // プロキシを信頼
+    standardHeaders: true,
+    legacyHeaders: false,
+    trustProxy: true,
     keyGenerator: (req) => {
-        // IPアドレスの取得方法を改善
         const ip = req.ip || 
                   req.connection.remoteAddress || 
                   req.socket.remoteAddress ||
@@ -80,6 +79,7 @@ app.get('/health', (req, res) => {
 
 // ルートページ
 app.get('/', (req, res) => {
+    const envMode = process.env.NODE_ENV || 'development';
     res.send(`
         <!DOCTYPE html>
         <html lang="ja">
@@ -126,7 +126,7 @@ app.get('/', (req, res) => {
                 <h1>🤖 Discord Groq Bot</h1>
                 <div class="status">
                     <h3>✅ サーバー正常稼働中</h3>
-                    <p>Environment: ${process.env.NODE_ENV || 'development'}</p>
+                    <p>Environment: ${envMode}</p>
                 </div>
                 <div class="info">
                     <p>このサイトはDiscord BotのTwitter認証専用です。</p>
@@ -155,7 +155,7 @@ setInterval(() => {
     }
 }, 5 * 60 * 1000); // 5分ごと
 
-// 認証フォーム表示（UI改善版）
+// 認証フォーム表示（構文エラー修正版）
 app.get('/auth/:sessionId', async (req, res) => {
     try {
         const { sessionId } = req.params;
@@ -176,201 +176,10 @@ app.get('/auth/:sessionId', async (req, res) => {
             ));
         }
         
-        // 🎨 改善されたフォーム
-        res.send(`
-            <!DOCTYPE html>
-            <html lang="ja">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Twitter API設定 - Discord Groq Bot</title>
-                <meta name="robots" content="noindex, nofollow">
-                <style>
-                    body { 
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                        max-width: 500px; 
-                        margin: 30px auto; 
-                        padding: 20px;
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        min-height: 100vh;
-                    }
-                    .container {
-                        background: white;
-                        padding: 40px;
-                        border-radius: 16px;
-                        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-                    }
-                    h1 { 
-                        color: #2d3748; 
-                        text-align: center; 
-                        margin-bottom: 30px;
-                        font-size: 28px;
-                        font-weight: 700;
-                    }
-                    .form-group { 
-                        margin-bottom: 24px; 
-                    }
-                    label { 
-                        display: block; 
-                        margin-bottom: 8px; 
-                        color: #4a5568;
-                        font-weight: 600;
-                        font-size: 14px;
-                    }
-                    input[type="password"] { 
-                        width: 100%; 
-                        padding: 14px 16px; 
-                        border: 2px solid #e2e8f0; 
-                        border-radius: 12px; 
-                        font-size: 16px;
-                        font-family: 'SF Mono', Monaco, monospace;
-                        transition: all 0.2s ease;
-                        box-sizing: border-box;
-                        background: #f7fafc;
-                    }
-                    input[type="password"]:focus { 
-                        outline: none; 
-                        border-color: #667eea; 
-                        background: white;
-                        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-                    }
-                    button { 
-                        width: 100%; 
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                        color: white; 
-                        padding: 16px; 
-                        border: none; 
-                        border-radius: 12px; 
-                        font-size: 16px; 
-                        font-weight: 600;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                        margin-top: 10px;
-                    }
-                    button:hover { 
-                        transform: translateY(-2px); 
-                        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-                    }
-                    button:disabled {
-                        opacity: 0.6;
-                        cursor: not-allowed;
-                        transform: none;
-                    }
-                    .security-note {
-                        background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
-                        border-left: 4px solid #4299e1;
-                        padding: 20px;
-                        margin: 25px 0;
-                        border-radius: 8px;
-                        font-size: 14px;
-                        color: #2d3748;
-                        line-height: 1.6;
-                    }
-                    .timer {
-                        text-align: center;
-                        color: #e53e3e;
-                        font-weight: 600;
-                        margin-top: 20px;
-                        padding: 12px;
-                        background: #fed7d7;
-                        border-radius: 8px;
-                        font-size: 14px;
-                    }
-                    .help-text {
-                        font-size: 12px;
-                        color: #718096;
-                        margin-top: 4px;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <h1>🔐 Twitter API設定</h1>
-                    
-                    <div class="security-note">
-                        <strong>🛡️ セキュリティ保護:</strong><br>
-                        • このページはHTTPS暗号化で保護されています<br>
-                        • 入力された情報は安全に暗号化されて保存されます<br>
-                        • セッションは自動的に期限切れになります<br>
-                        • IPアドレスベースでアクセス制限されています
-                    </div>
-                    
-                    <form method="POST" id="authForm">
-                        <div class="form-group">
-                            <label for="apiKey">API Key (Consumer Key):</label>
-                            <input type="password" id="apiKey" name="apiKey" required autocomplete="off" 
-                                   placeholder="例: xvz1evFS4wEEPTGEFPHBog">
-                            <div class="help-text">Twitter Developer Portal から取得</div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="apiSecret">API Secret (Consumer Secret):</label>
-                            <input type="password" id="apiSecret" name="apiSecret" required autocomplete="off"
-                                   placeholder="例: L8qq9PZyRg6ieKGEKhZolGC0vJWLw8iEJ88DRdyOg">
-                            <div class="help-text">Twitter Developer Portal から取得</div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="accessToken">Access Token:</label>
-                            <input type="password" id="accessToken" name="accessToken" required autocomplete="off"
-                                   placeholder="例: 16253605-2YxK7dufYqXb2fE4XgVhmXT">
-                            <div class="help-text">アプリの認証が必要</div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="accessSecret">Access Token Secret:</label>
-                            <input type="password" id="accessSecret" name="accessSecret" required autocomplete="off"
-                                   placeholder="例: GDdGIXNw1Ec43MYptXJ0dNTpTkxGf8JmAU">
-                            <div class="help-text">アクセストークンと一緒に発行</div>
-                        </div>
-                        
-                        <button type="submit" id="submitBtn">🔒 安全に保存して設定完了</button>
-                    </form>
-                    
-                    <div class="timer" id="timer"></div>
-                </div>
-
-                <script>
-                    // セッション期限タイマー
-                    const expiresAt = ${session.expires};
-                    const timerElement = document.getElementById('timer');
-                    
-                    function updateTimer() {
-                        const now = Date.now();
-                        const remaining = Math.max(0, expiresAt - now);
-                        const minutes = Math.floor(remaining / 60000);
-                        const seconds = Math.floor((remaining % 60000) / 1000);
-                        
-                        if (remaining > 0) {
-                            timerElement.textContent = \`⏰ セッション残り時間: \${minutes}:\${seconds.toString().padStart(2, '0')}\`;
-                            if (remaining < 60000) { // 1分未満で警告
-                                timerElement.style.background = '#fed7d7';
-                                timerElement.style.color = '#c53030';
-                            }
-                        } else {
-                            timerElement.textContent = '❌ セッションが期限切れです - ページを更新してください';
-                            timerElement.style.background = '#feb2b2';
-                            document.getElementById('authForm').style.display = 'none';
-                        }
-                    }
-                    
-                    updateTimer();
-                    setInterval(updateTimer, 1000);
-                    
-                    // フォーム送信時の処理
-                    document.getElementById('authForm').addEventListener('submit', function(e) {
-                        const submitBtn = document.getElementById('submitBtn');
-                        submitBtn.innerHTML = '🔄 認証中... しばらくお待ちください';
-                        submitBtn.disabled = true;
-                        
-                        // 入力フィールドも無効化
-                        const inputs = document.querySelectorAll('input');
-                        inputs.forEach(input => input.disabled = true);
-                    });
-                </script>
-            </body>
-            </html>
-        `);
+        // 🎨 修正されたフォーム（構文エラー解消）
+        const formHtml = createAuthFormHtml(session.expires);
+        res.send(formHtml);
+        
     } catch (error) {
         console.error('Auth form error:', error);
         res.status(500).send(getErrorPage(
@@ -379,6 +188,203 @@ app.get('/auth/:sessionId', async (req, res) => {
         ));
     }
 });
+
+// フォームHTML生成関数（構文エラー回避）
+function createAuthFormHtml(expiresAt) {
+    return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter API設定 - Discord Groq Bot</title>
+    <meta name="robots" content="noindex, nofollow">
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 500px; 
+            margin: 30px auto; 
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 { 
+            color: #2d3748; 
+            text-align: center; 
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .form-group { 
+            margin-bottom: 24px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        input[type="password"] { 
+            width: 100%; 
+            padding: 14px 16px; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 12px; 
+            font-size: 16px;
+            font-family: 'SF Mono', Monaco, monospace;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            background: #f7fafc;
+        }
+        input[type="password"]:focus { 
+            outline: none; 
+            border-color: #667eea; 
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        button { 
+            width: 100%; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 16px; 
+            border: none; 
+            border-radius: 12px; 
+            font-size: 16px; 
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+        button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .security-note {
+            background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+            border-left: 4px solid #4299e1;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+        .timer {
+            text-align: center;
+            color: #e53e3e;
+            font-weight: 600;
+            margin-top: 20px;
+            padding: 12px;
+            background: #fed7d7;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .help-text {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Twitter API設定</h1>
+        
+        <div class="security-note">
+            <strong>🛡️ セキュリティ保護:</strong><br>
+            • このページはHTTPS暗号化で保護されています<br>
+            • 入力された情報は安全に暗号化されて保存されます<br>
+            • セッションは自動的に期限切れになります<br>
+            • IPアドレスベースでアクセス制限されています
+        </div>
+        
+        <form method="POST" id="authForm">
+            <div class="form-group">
+                <label for="apiKey">API Key (Consumer Key):</label>
+                <input type="password" id="apiKey" name="apiKey" required autocomplete="off" 
+                       placeholder="例: xvz1evFS4wEEPTGEFPHBog">
+                <div class="help-text">Twitter Developer Portal から取得</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="apiSecret">API Secret (Consumer Secret):</label>
+                <input type="password" id="apiSecret" name="apiSecret" required autocomplete="off"
+                       placeholder="例: L8qq9PZyRg6ieKGEKhZolGC0vJWLw8iEJ88DRdyOg">
+                <div class="help-text">Twitter Developer Portal から取得</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="accessToken">Access Token:</label>
+                <input type="password" id="accessToken" name="accessToken" required autocomplete="off"
+                       placeholder="例: 16253605-2YxK7dufYqXb2fE4XgVhmXT">
+                <div class="help-text">アプリの認証が必要</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="accessSecret">Access Token Secret:</label>
+                <input type="password" id="accessSecret" name="accessSecret" required autocomplete="off"
+                       placeholder="例: GDdGIXNw1Ec43MYptXJ0dNTpTkxGf8JmAU">
+                <div class="help-text">アクセストークンと一緒に発行</div>
+            </div>
+            
+            <button type="submit" id="submitBtn">🔒 安全に保存して設定完了</button>
+        </form>
+        
+        <div class="timer" id="timer"></div>
+    </div>
+
+    <script>
+        // セッション期限タイマー
+        var expiresAt = ${expiresAt};
+        var timerElement = document.getElementById('timer');
+        
+        function updateTimer() {
+            var now = Date.now();
+            var remaining = Math.max(0, expiresAt - now);
+            var minutes = Math.floor(remaining / 60000);
+            var seconds = Math.floor((remaining % 60000) / 1000);
+            
+            if (remaining > 0) {
+                timerElement.textContent = '⏰ セッション残り時間: ' + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                if (remaining < 60000) {
+                    timerElement.style.background = '#fed7d7';
+                    timerElement.style.color = '#c53030';
+                }
+            } else {
+                timerElement.textContent = '❌ セッションが期限切れです - ページを更新してください';
+                timerElement.style.background = '#feb2b2';
+                document.getElementById('authForm').style.display = 'none';
+            }
+        }
+        
+        updateTimer();
+        setInterval(updateTimer, 1000);
+        
+        // フォーム送信時の処理
+        document.getElementById('authForm').addEventListener('submit', function(e) {
+            var submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '🔄 認証中... しばらくお待ちください';
+            submitBtn.disabled = true;
+            
+            var inputs = document.querySelectorAll('input');
+            for (var i = 0; i < inputs.length; i++) {
+                inputs[i].disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>`;
+}
 
 // 認証フォーム処理
 app.post('/auth/:sessionId', async (req, res) => {
@@ -431,11 +437,9 @@ app.post('/auth/:sessionId', async (req, res) => {
                 [session.userId]
             );
             
-            // 新しいキーを保存
+            // 新しいキーを保存（🔧 構文エラー修正）
             await client.query(
-                \`INSERT INTO user_api_keys 
-                (user_id, encrypted_api_key, encrypted_api_secret, encrypted_access_token, encrypted_access_secret)
-                VALUES ($1, $2, $3, $4, $5)\`,
+                'INSERT INTO user_api_keys (user_id, encrypted_api_key, encrypted_api_secret, encrypted_access_token, encrypted_access_secret) VALUES ($1, $2, $3, $4, $5)',
                 [
                     session.userId,
                     encrypt(apiKey.trim()),
@@ -473,13 +477,12 @@ app.post('/auth/:sessionId', async (req, res) => {
 
 // エラーページヘルパー
 function getErrorPage(title, message) {
-    return \`
-<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>\${title} - Discord Groq Bot</title>
+    <title>${title} - Discord Groq Bot</title>
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -533,19 +536,19 @@ function getErrorPage(title, message) {
 <body>
     <div class="error-container">
         <div class="error-icon">⚠️</div>
-        <h1>\${title}</h1>
-        <p>\${message}</p>
+        <h1>${title}</h1>
+        <p>${message}</p>
         <a href="javascript:history.back()" class="back-link">戻る</a>
     </div>
 </body>
-</html>
-    \`;
+</html>`;
 }
 
 // 成功ページヘルパー
 function getSuccessPage(username = '') {
-    return \`
-<!DOCTYPE html>
+    const usernameDisplay = username ? `<div class="username">@${username} として認証されました</div>` : '';
+    
+    return `<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -614,7 +617,7 @@ function getSuccessPage(username = '') {
     <div class="success-container">
         <div class="success-icon">✅</div>
         <h1>設定完了！</h1>
-        \${username ? \`<div class="username">@\${username} として認証されました</div>\` : ''}
+        ${usernameDisplay}
         <p>Twitter APIキーの設定が正常に完了しました。</p>
         <p>このページを閉じて、Discordでボットをご利用ください。</p>
         <div class="note">
@@ -625,15 +628,14 @@ function getSuccessPage(username = '') {
         </div>
     </div>
 </body>
-</html>
-    \`;
+</html>`;
 }
 
 function startServer(port) {
     app.listen(port, () => {
-        console.log(\`🌐 認証サーバーがポート \${port} で起動しました\`);
-        console.log(\`🔒 セキュリティモード: \${process.env.NODE_ENV || 'development'}\`);
-        console.log(\`🛡️ Trust Proxy: 有効\`);
+        console.log(`🌐 認証サーバーがポート ${port} で起動しました`);
+        console.log(`🔒 セキュリティモード: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`🛡️ Trust Proxy: 有効`);
     });
 }
 
