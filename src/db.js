@@ -1,4 +1,4 @@
-// DB管理サービス
+// DB管理サービス（テーブルリセット機能付き）
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -8,6 +8,28 @@ const pool = new Pool({
     password: process.env.DB_PASSWORD,
     port: process.env.DB_PORT,
 });
+
+// 🆕 新規追加: テーブルリセット関数
+async function resetTables() {
+    const client = await pool.connect();
+    try {
+        console.log('🔄 既存テーブルをリセット中...');
+        
+        // 既存テーブルを削除（外部キー制約のため順序重要）
+        await client.query('DROP TABLE IF EXISTS scheduled_tweets CASCADE');
+        await client.query('DROP TABLE IF EXISTS usage_tracking CASCADE');
+        await client.query('DROP TABLE IF EXISTS tweet_history CASCADE');
+        await client.query('DROP TABLE IF EXISTS user_api_keys CASCADE');
+        await client.query('DROP TABLE IF EXISTS users CASCADE');
+        
+        console.log('✅ 既存テーブル削除完了');
+    } catch (error) {
+        console.error('❌ テーブルリセットエラー:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}
 
 async function initializeDatabase() {
     const client = await pool.connect();
@@ -101,5 +123,6 @@ async function getOrCreateUser(discordId, username) {
 module.exports = {
     pool,
     initializeDatabase,
-    getOrCreateUser
+    getOrCreateUser,
+    resetTables  // 🆕 追加
 };
