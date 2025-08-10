@@ -5,9 +5,9 @@ const { encrypt, decrypt } = require('./utils');
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 const MODELS = {
-    DEFAULT: 'moonshotai/kimi-k2-instruct',
+    DEFAULT: 'openai/gpt-oss-120b',
     SEARCH: 'compound-beta',
-    QWEN: 'qwen/qwen3-32b'
+    REASONING: 'moonshotai/kimi-k2-instruct'
 };
 
 function getSystemPrompt(model) {
@@ -15,8 +15,8 @@ function getSystemPrompt(model) {
     switch (model) {
         case MODELS.SEARCH:
             return basePrompt + ' 最新の情報が必要な場合は、自動的にWeb検索を実行して正確な情報を提供してください。';
-        case MODELS.QWEN:
-            return basePrompt + ' 複雑な推論や論理的思考が必要な場合は、段階的に説明してください。';
+        case MODELS.REASONING:
+            return basePrompt + ' 複雑な推論や論理的思考が必要な場合は、段階的に説明してください。詳細な分析と根拠を提供してください。';
         default:
             return basePrompt;
     }

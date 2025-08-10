@@ -1,5 +1,7 @@
 # 環境変数
 .env
+.env.local
+.env.production
 
 # 依存関係
 node_modules/
@@ -7,6 +9,11 @@ node_modules/
 # ログファイル
 *.log
 npm-debug.log*
+logs/
+
+# PM2関連
+.pm2/
+pids/
 
 # OS関連
 .DS_Store
@@ -19,3 +26,6 @@ Thumbs.db
 # ビルド関連
 dist/
 build/
+
+# VPS設定（本番環境の設定が含まれる場合はコメントアウト）
+# ecosystem.config.js
