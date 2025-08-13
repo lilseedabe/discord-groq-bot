@@ -67,7 +67,6 @@ const chatCommands = [
                 )
         ),
     new SlashCommandBuilder().setName('clear').setDescription('会話履歴をクリアする'),
-    new SlashCommandBuilder().setName('history').setDescription('現在の会話履歴を確認する'),
     new SlashCommandBuilder().setName('status').setDescription('ボットの状態とメモリ使用量を確認する'),
     new SlashCommandBuilder().setName('models').setDescription('利用可能なAIモデルの情報を表示'),
     
@@ -201,7 +200,7 @@ client.on('interactionCreate', async (interaction) => {
 
     try {
         // 既存の会話コマンド処理
-        if (['ask', 'search', 'ask-model', 'clear', 'history', 'status', 'models'].includes(commandName)) {
+        if (['ask', 'search', 'ask-model', 'clear', 'status', 'models'].includes(commandName)) {
             await handleChatCommands(interaction, commandName, userId, username);
         }
         // 新しい案内コマンド
@@ -282,24 +281,6 @@ async function handleChatCommands(interaction, commandName, userId, username) {
             createdAt: Date.now() 
         });
         await interaction.editReply({ content: '✅ 会話履歴をクリアしました' });
-        
-    } else if (commandName === 'history') {
-        const conversation = getConversation(userId);
-        if (conversation.messages.length === 0) {
-            await interaction.editReply({ content: '📝 会話履歴はまだありません' });
-            return;
-        }
-        
-        const recentMessages = conversation.messages.slice(-10);
-        const history = recentMessages.map((m, index) => {
-            const time = new Date(m.timestamp).toLocaleTimeString('ja-JP');
-            const role = m.role === 'user' ? '👤' : '🤖';
-            const model = m.model ? ` (${m.model})` : '';
-            return `${role} [${time}]${model} ${m.content.substring(0, 100)}${m.content.length > 100 ? '...' : ''}`;
-        }).join('\n\n');
-        
-        const historyMessage = `📚 **会話履歴** (最新10件)\n\`\`\`\n${history}\n\`\`\``;
-        await sendLongMessage(interaction, historyMessage);
         
     } else if (commandName === 'status') {
         await handleStatusCommand(interaction);
